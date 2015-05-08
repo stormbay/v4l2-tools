@@ -1,0 +1,8 @@
+
+*.o
+*.a
+*.so
+*.yuv
+
+v4l2_capture
+
