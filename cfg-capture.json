@@ -1,0 +1,24 @@
+{
+	"streams":	[
+					{
+						"device" : "/dev/video0",
+						"format" : "YUYV422",
+						"width"  : 640,
+						"height" : 480,
+
+						"output" : "capture-0-yuyv422.yuv",
+						"frames" : 100
+					},
+
+					{
+						"device" : "/dev/video0",
+						"format" : "YUYV422",
+						"width"  : 1920,
+						"height" : 1080,
+
+						"output" : "capture-0-yuyv422.yuv",
+						"frames" : 10
+					}
+				]
+}
+
