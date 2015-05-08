@@ -6,6 +6,7 @@
 #include <limits.h>
 #include <string.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -19,8 +20,6 @@
 /********************************** cfg-capture.json Parser ***********************************/
 
 #define MAX_FORMAT_STR			32
-
-#define CONFIG_FILE				"cfg-capture.json"
 #define MAX_STREAM_NUM			2
 
 struct stream_cfg_t
@@ -32,6 +31,7 @@ struct stream_cfg_t
 
 	char outfile[PATH_MAX];
 	unsigned int frames;
+	unsigned int ignore;
 };
 
 struct stream_list_t
@@ -41,6 +41,9 @@ struct stream_list_t
 };
 
 static struct stream_list_t g_streamlist;
+
+static char g_cfgfile_path[PATH_MAX];
+
 
 static int json_streamlist_read( const char *buf )
 {
@@ -54,6 +57,7 @@ static int json_streamlist_read( const char *buf )
 		{ "height", t_integer, STRUCTOBJECT( struct stream_cfg_t, height ) },
 		{ "output", t_string,  STRUCTOBJECT( struct stream_cfg_t, outfile ), .len = sizeof( g_streamlist.list[0].outfile ) },
 		{ "frames", t_integer, STRUCTOBJECT( struct stream_cfg_t, frames ) },
+		{ "ignore", t_integer, STRUCTOBJECT( struct stream_cfg_t, ignore ) },
 		{ NULL },
 	};
 	const struct json_attr_t json_general_attrs[] =
@@ -118,9 +122,10 @@ json_file_parser( const char *filename )
 	T_PRINT( "%d streams:\n", g_streamlist.nstreams );
 	for( i = 0; i < g_streamlist.nstreams; i++ )
 	{
-		T_PRINT( "\t\"%s\" | \"%s\" | %dx%d | \"%s\" x%d\n", g_streamlist.list[i].dev, g_streamlist.list[i].fmt,			\
+		T_PRINT( "\t\"%s\" | \"%s\" | %dx%d | \"%s\" x%d(-%d)\n", g_streamlist.list[i].dev, g_streamlist.list[i].fmt,		\
 															g_streamlist.list[i].width, g_streamlist.list[i].height,		\
-															g_streamlist.list[i].outfile, g_streamlist.list[i].frames );
+															g_streamlist.list[i].outfile, g_streamlist.list[i].frames,		\
+															g_streamlist.list[i].ignore );
 	}
 
 	if( status != 0 )
@@ -147,31 +152,6 @@ struct userbuffer
 
 struct userbuffer *gp_buffers = NULL;
 
-
-static void
-usage( void )
-{
-	printf( "Usage: \n" );
-}
-
-static int
-arg_parser( int argc, char *argv[] )
-{
-	int ret = 0;
-
-	ret = json_file_parser( CONFIG_FILE );
-	if( ret )
-	{
-		T_ERROR( "Failed to parse config file %s\n", CONFIG_FILE );
-		ret = -EINVAL;
-		goto parser_exit;
-	}
-
-	return 0;
-
-parser_exit:
-	return ret;
-}
 
 int
 single_stream_process( struct stream_cfg_t *pstream )
@@ -451,7 +431,7 @@ single_stream_process( struct stream_cfg_t *pstream )
 	unsigned int frames = 0;
 	struct v4l2_buffer buf;
 
-	frames = pstream->frames;
+	frames = pstream->frames + pstream->ignore;
 
 	FD_ZERO( &fds );
 	FD_SET( devfd, &fds );
@@ -492,13 +472,16 @@ single_stream_process( struct stream_cfg_t *pstream )
 		}
 		T_PRINTF( "%d ... ", buf.index );
 
-		T_PRINTF( "Saving ... " );
-		wr_size = fwrite( gp_buffers[buf.index].start, 1, buf.bytesused, outfp );
-		if( wr_size != buf.bytesused )
+		if( frames <= pstream->frames )
 		{
-			T_ERROR( "FAILED (%d/%d)\n", (unsigned int)wr_size, buf.bytesused );
-			ret = -EIO;
-			goto stream_off;
+			T_PRINTF( "Saving ... " );
+			wr_size = fwrite( gp_buffers[buf.index].start, 1, buf.bytesused, outfp );
+			if( wr_size != buf.bytesused )
+			{
+				T_ERROR( "FAILED (%d/%d)\n", (unsigned int)wr_size, buf.bytesused );
+				ret = -EIO;
+				goto stream_off;
+			}
 		}
 
 		T_PRINTF( "QBUF-" );
@@ -554,6 +537,54 @@ streams_process( void )
 
 	ret = single_stream_process(&(g_streamlist.list[0]));
 
+	return ret;
+}
+
+static void
+usage( void )
+{
+	printf( "Usage: v4l2_capture -c <json-config-file>\n" );
+}
+
+const static char *short_options = "c:";
+const static struct option long_options[] =
+{
+	{ "config", 1, NULL, 'c' },
+
+	{ 0, 0, 0, 0 },
+};
+
+static int
+arg_parser( int argc, char *argv[] )
+{
+	int ret = 0, loop = 1, c = 0;
+
+	while( loop )
+	{
+		c = getopt_long( argc, argv, short_options, long_options, NULL );
+		switch( c )
+		{
+		case 'c' :
+			strncpy( g_cfgfile_path, optarg, PATH_MAX );
+			T_PRINT( "option - config file = %s\n", g_cfgfile_path );
+
+		default :
+			loop = 0;
+			break;
+		}
+	}
+
+	ret = json_file_parser( g_cfgfile_path );
+	if( ret )
+	{
+		T_ERROR( "Failed to parse config file \"%s\"\n", g_cfgfile_path );
+		ret = -EINVAL;
+		goto parser_exit;
+	}
+
+	return 0;
+
+parser_exit:
 	return ret;
 }
 

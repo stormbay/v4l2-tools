@@ -7,7 +7,8 @@
 						"height" : 480,
 
 						"output" : "capture-0-yuyv422.yuv",
-						"frames" : 100
+						"frames" : 15,
+						"ignore" : 15,
 					},
 
 					{
@@ -17,7 +18,8 @@
 						"height" : 1080,
 
 						"output" : "capture-0-yuyv422.yuv",
-						"frames" : 10
+						"frames" : 10,
+						"ignore" : 0,
 					}
 				]
 }
