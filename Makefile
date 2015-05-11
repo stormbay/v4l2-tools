@@ -1,7 +1,7 @@
 
 TEST_VIVI_DUMMY_CAMERA := true
 
-#CROSS_PREFIX := arm-linux-gnueabihf-
+CROSS_PREFIX := arm-linux-gnueabihf-
 
 CC    := $(CROSS_PREFIX)gcc
 AR    := $(CROSS_PREFIX)ar
