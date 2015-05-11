@@ -1,4 +1,6 @@
 
+TEST_VIVI_DUMMY_CAMERA := true
+
 #CROSS_PREFIX := arm-linux-gnueabihf-
 
 CC    := $(CROSS_PREFIX)gcc
@@ -43,7 +45,12 @@ CAPTURE_OBJS := capture.o
 
 CAPTURE_MODULE  := v4l2_capture
 
+ifneq ($(strip $(TEST_VIVI_DUMMY_CAMERA)),true)
+CFLAGS += -DSKIP_CROP_IOCTL
+endif
+
 LDFLAGS += -L. -lmjson
+
 
 .PHONY: all
 all: $(MJSON_LIBS) $(CAPTURE_MODULE)

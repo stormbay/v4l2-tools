@@ -178,8 +178,6 @@ single_stream_process( struct stream_cfg_t *pstream )
 
 {
 	struct v4l2_capability cap;
-	struct v4l2_cropcap cropcap;
-//	struct v4l2_crop crop;
 	struct v4l2_fmtdesc fmtdesc;
 	struct v4l2_format fmt;
 	struct v4l2_streamparm capparm;
@@ -211,6 +209,11 @@ single_stream_process( struct stream_cfg_t *pstream )
 		ret = -EINVAL;
 		goto proc_out;
 	}
+
+#ifdef SKIP_CROP_IOCTL
+{
+	struct v4l2_cropcap cropcap;
+//	struct v4l2_crop crop;
 
 	/***** ioctl[VIDIOC_CROPCAP] / [VIDIOC_S_CROP] *****/
 	memset( &cropcap, 0, sizeof(struct v4l2_cropcap));
@@ -244,6 +247,8 @@ single_stream_process( struct stream_cfg_t *pstream )
 //			goto proc_out;
 //		}
 	}
+}
+#endif	// SKIP_CROP_IOCTL
 
 	/***** ioctl[VIDIOC_ENUM_FMT] *****/
 	memset( &fmtdesc, 0, sizeof(struct v4l2_fmtdesc));

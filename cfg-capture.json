@@ -1,25 +1,25 @@
 {
 	"streams":	[
 					{
-						"device" : "/dev/video0",
+						"device" : "/dev/video1",
 						"format" : "YUYV422",
 						"width"  : 640,
 						"height" : 480,
 
-						"output" : "capture-0-yuyv422.yuv",
-						"frames" : 15,
-						"ignore" : 15,
+						"output" : "capture-1-yuyv422.yuv",
+						"frames" : 60,
+						"ignore" : 0,
 					},
 
 					{
 						"device" : "/dev/video0",
 						"format" : "YUYV422",
-						"width"  : 1920,
-						"height" : 1080,
+						"width"  : 1024,
+						"height" : 768,
 
 						"output" : "capture-0-yuyv422.yuv",
-						"frames" : 10,
-						"ignore" : 0,
+						"frames" : 15,
+						"ignore" : 15,
 					}
 				]
 }
