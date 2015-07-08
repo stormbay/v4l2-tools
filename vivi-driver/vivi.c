@@ -51,6 +51,14 @@
 #define MAX_WIDTH 1920
 #define MAX_HEIGHT 1200
 
+#if 0
+#define	DEFAULT_WIDTH		640
+#define	DEFAULT_HEIGHT		480
+#else
+#define	DEFAULT_WIDTH		1280
+#define	DEFAULT_HEIGHT		960
+#endif
+
 #define VIVI_VERSION "0.8.1"
 
 MODULE_DESCRIPTION("Video Technology Magazine Virtual Video Capture Board");
@@ -768,7 +776,8 @@ static int vivi_start_generating(struct vivi_dev *dev)
 
 	dma_q->frame = 0;
 	dma_q->ini_jiffies = jiffies;
-	dma_q->kthread = kthread_run(vivi_thread, dev, dev->v4l2_dev.name);
+	dma_q->kthread = kthread_run(vivi_thread, dev, "%s",
+				     dev->v4l2_dev.name);
 
 	if (IS_ERR(dma_q->kthread)) {
 		v4l2_err(&dev->v4l2_dev, "kernel_thread() failed\n");
@@ -1003,6 +1012,9 @@ static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
 		fmt = get_format(f);
 	}
 
+	if(( f->fmt.pix.width != DEFAULT_WIDTH ) && ( f->fmt.pix.height != DEFAULT_HEIGHT ))
+		return -EINVAL;
+
 	f->fmt.pix.field = V4L2_FIELD_INTERLACED;
 	v4l_bound_align_image(&f->fmt.pix.width, 48, MAX_WIDTH, 2,
 			      &f->fmt.pix.height, 32, MAX_HEIGHT, 0, 0);
@@ -1041,6 +1053,7 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
 	return 0;
 }
 
+#if 0
 static int vidioc_enum_framesizes(struct file *file, void *fh,
 					 struct v4l2_frmsizeenum *fsize)
 {
@@ -1061,6 +1074,7 @@ static int vidioc_enum_framesizes(struct file *file, void *fh,
 	fsize->stepwise = sizes;
 	return 0;
 }
+#endif
 
 /* only one input in this sample driver */
 static int vidioc_enum_input(struct file *file, void *priv,
@@ -1107,7 +1121,7 @@ static int vidioc_s_input(struct file *file, void *priv, unsigned int i)
 	return 0;
 }
 
-/* timeperframe is arbitrary and continous */
+/* timeperframe is arbitrary and continuous */
 static int vidioc_enum_frameintervals(struct file *file, void *priv,
 					     struct v4l2_frmivalenum *fival)
 {
@@ -1124,7 +1138,7 @@ static int vidioc_enum_frameintervals(struct file *file, void *priv,
 
 	fival->type = V4L2_FRMIVAL_TYPE_CONTINUOUS;
 
-	/* fill in stepwise (step=1.0 is requred by V4L2 spec) */
+	/* fill in stepwise (step=1.0 is required by V4L2 spec) */
 	fival->stepwise.min  = tpf_min;
 	fival->stepwise.max  = tpf_max;
 	fival->stepwise.step = (struct v4l2_fract) {1, 1};
@@ -1319,7 +1333,7 @@ static const struct v4l2_ioctl_ops vivi_ioctl_ops = {
 	.vidioc_g_fmt_vid_cap     = vidioc_g_fmt_vid_cap,
 	.vidioc_try_fmt_vid_cap   = vidioc_try_fmt_vid_cap,
 	.vidioc_s_fmt_vid_cap     = vidioc_s_fmt_vid_cap,
-	.vidioc_enum_framesizes   = vidioc_enum_framesizes,
+//	.vidioc_enum_framesizes   = vidioc_enum_framesizes,
 	.vidioc_reqbufs       = vb2_ioctl_reqbufs,
 	.vidioc_create_bufs   = vb2_ioctl_create_bufs,
 	.vidioc_prepare_buf   = vb2_ioctl_prepare_buf,
@@ -1391,8 +1405,8 @@ static int __init vivi_create_instance(int inst)
 
 	dev->fmt = &formats[0];
 	dev->timeperframe = tpf_default;
-	dev->width = 640;
-	dev->height = 480;
+	dev->width = DEFAULT_WIDTH;
+	dev->height = DEFAULT_HEIGHT;
 	dev->pixelsize = dev->fmt->depth / 8;
 	hdl = &dev->ctrl_handler;
 	v4l2_ctrl_handler_init(hdl, 11);
